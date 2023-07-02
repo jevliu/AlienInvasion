@@ -13,5 +13,12 @@ class Settings:
         self.screen_height = 800
         self.bg_color = (230, 230, 230)
 
-        # 设置飞船移动的速度和距离等信息
+        # 设置飞船移动的速度
         self.ship_speed = 1.5
+
+        # 设置子弹
+        self.bullet_speed = 1.0
+        self.bullet_width = 3
+        self.bullet_height = 15
+        self.bullet_color = (60, 60, 60)
+        self.bullets_allowed = 3  # 限制当前屏幕可见区域内子弹大最大数量
