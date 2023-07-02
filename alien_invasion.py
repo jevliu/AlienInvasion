@@ -6,7 +6,7 @@ import pygame
 
 from settings import Settings
 from ship import Ship
-from bullet import Bullet
+from bullet import Bullet, BigBullet
 from alien import Alien
 
 
@@ -29,6 +29,7 @@ class AlienInvasion:
         self.ship = Ship(self)
         # 以编组的方式来操作发射出去的子弹
         self.bullets = pygame.sprite.Group()
+        self.big_bullets = pygame.sprite.Group()
         self.aliens = pygame.sprite.Group()
 
         self._creat_fleet()
@@ -38,7 +39,7 @@ class AlienInvasion:
         # 创建一个外星人并计算一行可容纳多少个外星人
         # 外星人的间距为外星人的宽度
         alien = Alien(self)
-        alien_width,alien_height = alien.rect.size
+        alien_width, alien_height = alien.rect.size
         available_space_x = self.settings.screen_width - (2 * alien_width)
         number_alien_x = available_space_x // (2 * alien_width)
 
@@ -50,10 +51,10 @@ class AlienInvasion:
         # 创建外星人群
         for row_number in range(number_rows):
             for alien_number in range(number_alien_x):
-                self._creat_alien(alien_number,row_number)
+                self._creat_alien(alien_number, row_number)
 
     # 重构_creat_fleet，将创建外星人的工作转移出来
-    def _creat_alien(self, alien_number,row_number):
+    def _creat_alien(self, alien_number, row_number):
         """根据alien_number创建外星人并加入到self.aliens中"""
         alien = Alien(self)
         alien_width, alien_height = alien.rect.size
@@ -91,28 +92,44 @@ class AlienInvasion:
     # 重构_check_events方法，将检查KEYDOWN和KEYUP的事件移到两个辅助方法中
     def _check_keydown_events(self, event):
         """响应按键按下"""
-        if event.key == pygame.K_RIGHT:
+        if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
             self.ship.moving_right = True
-        elif event.key == pygame.K_LEFT:
+        elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
             self.ship.moving_left = True
+        elif event.key == pygame.K_UP or event.key == pygame.K_w:
+            self.ship.moving_up = True
+        elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
+            self.ship.moving_down = True
         # 当玩家按下'Q'键时结束游戏，无需再使用鼠标进行点击关闭
         elif event.key == pygame.K_q:
             sys.exit()
         elif event.key == pygame.K_SPACE:
             self._fire_bullet()
+        elif event.key == pygame.K_g:
+            self._fire_big_bullet()
 
     def _check_keyup_events(self, event):
         """响应按键松开"""
-        if event.key == pygame.K_RIGHT:
+        if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
             self.ship.moving_right = False
-        elif event.key == pygame.K_LEFT:
+        elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
             self.ship.moving_left = False
+        elif event.key == pygame.K_UP or event.key == pygame.K_w:
+            self.ship.moving_up = False
+        elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
+            self.ship.moving_down = False
 
     def _fire_bullet(self):
         """创建一棵子弹，并将其加入到编组bullets中"""
         if len(self.bullets) < self.settings.bullets_allowed:
             new_bullet = Bullet(self)
             self.bullets.add(new_bullet)
+
+    def _fire_big_bullet(self):
+        """创建一个大号子弹并加入到编组中"""
+        if len(self.big_bullets) < self.settings.big_bullet_allowed:
+            new_big_bullet = BigBullet(self)
+            self.big_bullets.add(new_big_bullet)
 
     # 将更新屏幕的方法从run_game中转移到_update_screen()方法中
     def _update_screen(self):
@@ -121,6 +138,8 @@ class AlienInvasion:
         self.ship.blitme()
         for bullet in self.bullets.sprites():
             bullet.draw_bullet()
+        for big_bullet in self.big_bullets.sprites():
+            big_bullet.draw_bullet()
         self.aliens.draw(self.screen)
         # 让最近绘制的屏幕可见
         pygame.display.flip()
@@ -129,10 +148,34 @@ class AlienInvasion:
         """更新子弹的位置并处置消失的子弹"""
         # 更新子弹的位置
         self.bullets.update()
+        self.big_bullets.update()
         # 处理消失的子弹
         for bullet in self.bullets.copy():
             if bullet.rect.bottom <= 0:
                 self.bullets.remove(bullet)
+
+        for big_bullet in self.big_bullets.copy():
+            if big_bullet.rect.bottom <= 0:
+                self.big_bullets.remove(big_bullet)
+
+        self._check_bullet_alien_collisions()
+
+
+
+    def _check_bullet_alien_collisions(self):
+        """"响应子弹和外星人碰撞的方法"""
+        # 检查是否有子弹击中了外星人
+        # 如果是，就删除相应的子弹和外星人
+        collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+        big_collisions = pygame.sprite.groupcollide(self.big_bullets, self.aliens, False, True)
+
+        if not self.aliens:
+            # 删除现有子弹并新建一群外星人
+            self.bullets.empty()
+            self.big_bullets.empty()
+            self._creat_fleet()
+
+
 
     def _update_aliens(self):
         """检查是否有外星人位于屏幕边缘，并更新整群外星人的位置"""
