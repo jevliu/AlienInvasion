@@ -2,9 +2,12 @@
 创建一个表示游戏的类，用以创建空的Pygame窗口
 """
 import sys
+from time import sleep
+
 import pygame
 
 from settings import Settings
+from game_stats import GameStats
 from ship import Ship
 from bullet import Bullet, BigBullet
 from alien import Alien
@@ -25,6 +28,9 @@ class AlienInvasion:
         # self.settings.screen_height = self.screen.get_rect().height
 
         pygame.display.set_caption("Alien Invasion")
+
+        # 创建一个用于储存雍熙统计信息的实例
+        self.status = GameStats(self)
 
         self.ship = Ship(self)
         # 以编组的方式来操作发射出去的子弹
@@ -160,8 +166,6 @@ class AlienInvasion:
 
         self._check_bullet_alien_collisions()
 
-
-
     def _check_bullet_alien_collisions(self):
         """"响应子弹和外星人碰撞的方法"""
         # 检查是否有子弹击中了外星人
@@ -175,12 +179,45 @@ class AlienInvasion:
             self.big_bullets.empty()
             self._creat_fleet()
 
-
-
     def _update_aliens(self):
         """检查是否有外星人位于屏幕边缘，并更新整群外星人的位置"""
         self._check_fleet_edges()
         self.aliens.update()
+
+        # 检测外星人和飞船之间的碰撞
+        if pygame.sprite.spritecollideany(self.ship,self.aliens):
+            self._ship_hit()
+
+        # 检查是否有外星人到达屏幕底部
+        self._check_aliens_bottom()
+
+    def _ship_hit(self):
+        """响应飞船被外星人撞到"""
+        if self.status.ship_left > 0:
+            # 将ship_left的数目减少一个
+            self.status.ship_left -= 1
+
+            # 清空余下的外星人和子弹
+            self.aliens.empty()
+            self.bullets.empty()
+
+            # 创建一群新的外星人，并将飞船重新移动到屏幕底部的中央
+            self._creat_fleet()
+            self.ship.center_ship()
+
+            # 暂停一下
+            sleep(0.5)
+        else:
+            self.status.game_active = False
+
+    def _check_aliens_bottom(self):
+        """检查是否有外星人到达了屏幕底部"""
+        screen_rect = self.screen.get_rect()
+        for alien in self.aliens.sprites():
+            if alien.rect.bottom >= screen_rect.bottom:
+                # 向飞船撞到外星人一样进行处理
+                self._ship_hit()
+                break
 
     def run_game(self):
         """开始游戏的主循环"""
@@ -188,9 +225,11 @@ class AlienInvasion:
             # 监视键盘和鼠标事件,使用辅助方法
             self._check_events()
             # 飞船的位置将在检测到键盘事件后，但在更新屏幕前进行更新
-            self.ship.update()
-            self._update_bullets()
-            self._update_aliens()
+            if self.status.game_active:
+                # 仅在游戏处于活动状态时才运行下面的代码
+                self.ship.update()
+                self._update_bullets()
+                self._update_aliens()
             # 每次循环时都重绘屏幕
             self._update_screen()
 

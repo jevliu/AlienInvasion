@@ -16,12 +16,13 @@ class Settings:
 
         # 设置飞船移动的速度
         self.ship_speed = 0.5
+        self.ship_limit = 3
 
         # 设置子弹
-        self.bullet_speed = 0.5
+        self.bullet_speed = 2
         self.bullet_width = 5
         self.bullet_height = 20
-        self.bullet_color = (255, 69, 0)
+        self.bullet_color = (100,149,137)
         self.bullets_allowed = 3  # 限制当前屏幕可见区域内子弹大最大数量
 
         # 设置大号子弹的型形状
