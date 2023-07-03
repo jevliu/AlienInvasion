@@ -3,13 +3,15 @@
 """
 
 import pygame
+from pygame.sprite import Sprite
 
 
-class Ship:
+class Ship(Sprite):
     """管理飞船的类"""
 
     def __init__(self, ai_game):
         """初始化飞船并设置其初始位置"""
+        super().__init__()
         self.screen = ai_game.screen
         self.settings = ai_game.settings
         self.screen_rect = ai_game.screen.get_rect()
@@ -43,7 +45,6 @@ class Ship:
         if self.moving_down and self.rect.bottom <= self.screen_rect.bottom:
             self.y += self.settings.ship_speed
 
-
         # 跟新rect对象
         self.rect.x = self.x
         self.rect.y = self.y
@@ -51,7 +52,6 @@ class Ship:
     def blitme(self):
         """在指定位置绘制飞船"""
         self.screen.blit(self.image, self.rect)
-
 
     def center_ship(self):
         """将飞船移动到屏幕底部中央"""
